@@ -2,9 +2,8 @@ package com.gallery.ui.home
 
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.annotation.OptIn
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -44,6 +43,8 @@ import com.gallery.data.model.MediaType
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.geometry.Offset
+import kotlin.OptIn
 
 @Composable
 fun MediaDetailScreen(
@@ -58,7 +59,7 @@ fun MediaDetailScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             pageSpacing = 16.dp,
-            userScrollEnabled = true,
+            userScrollEnabled = true, // Pager scrolling enabled
             beyondViewportPageCount = 1
         ) { pageIndex ->
             val item = mediaItems[pageIndex]
@@ -84,28 +85,32 @@ fun MediaDetailScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ZoomableImage(item: AppMediaItem) {
     var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
     val state = rememberTransformableState { zoomChange, panChange, _ ->
         scale = (scale * zoomChange).coerceIn(1f, 5f)
         if (scale > 1f) {
             offset += panChange
         } else {
-            offset = androidx.compose.ui.geometry.Offset.Zero
+            offset = Offset.Zero
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .transformable(state = state)
+            .transformable(
+                state = state,
+                canPan = { scale > 1f }
+            )
             .pointerInput(Unit) {
                 detectTapGestures(onDoubleTap = {
                     if (scale > 1f) {
                         scale = 1f
-                        offset = androidx.compose.ui.geometry.Offset.Zero
+                        offset = Offset.Zero
                     } else {
                         scale = 3f
                     }

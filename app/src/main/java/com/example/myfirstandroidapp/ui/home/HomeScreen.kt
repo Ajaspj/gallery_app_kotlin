@@ -54,6 +54,15 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.History
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.graphics.vector.ImageVector
+
 @Composable
 fun HomeScreen(
     onMediaClick: (List<MediaItem>, Int) -> Unit,
@@ -64,6 +73,7 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val filterType by viewModel.filterType.collectAsState()
+    val progress by viewModel.analysisProgress.collectAsState()
 
     Box(
         modifier = Modifier
@@ -74,25 +84,44 @@ fun HomeScreen(
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                bottom = 100.dp
+                bottom = 120.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             item(span = { GridItemSpan(3) }) {
-                Text(
-                    text = "Gallery",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 24.dp)
-                )
+                Column {
+                    Text(
+                        text = "Gallery",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 12.dp)
+                    )
+                    
+                    if (progress != null) {
+                        Text(
+                            text = progress!!,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                        )
+                    }
+                    
+                    CategoryFilterRow(
+                        selectedFilter = filterType,
+                        onFilterSelected = { viewModel.setFilter(it) }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             if (isLoading && mediaItems.isEmpty()) {
+                // ... same loading UI ...
                 item(span = { GridItemSpan(3) }) {
                     Box(
                         modifier = Modifier
@@ -104,6 +133,7 @@ fun HomeScreen(
                     }
                 }
             } else if (error != null) {
+                // ... same error UI ...
                 item(span = { GridItemSpan(3) }) {
                     Column(
                         modifier = Modifier
@@ -129,6 +159,7 @@ fun HomeScreen(
                     }
                 }
             } else if (mediaItems.isEmpty()) {
+                // ... same empty UI ...
                 item(span = { GridItemSpan(3) }) {
                     Column(
                         modifier = Modifier
@@ -170,26 +201,19 @@ fun HomeScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 32.dp),
             shape = RoundedCornerShape(32.dp),
-            color = Color.Gray.copy(alpha = 0.15f),
-            tonalElevation = 0.dp
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+            tonalElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.padding(6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 NavButton(
-                    icon = Icons.Default.Image,
-                    label = "Photos",
-                    isSelected = filterType == MediaType.IMAGE || filterType == null,
-                    onClick = { viewModel.setFilter(null) }
-                )
-
-                NavButton(
-                    icon = Icons.Default.Videocam,
-                    label = "Videos",
-                    isSelected = filterType == MediaType.VIDEO,
-                    onClick = { viewModel.setFilter(MediaType.VIDEO) }
+                    icon = Icons.Default.History,
+                    label = "Recents",
+                    isSelected = filterType == null || filterType == "ALL",
+                    onClick = { viewModel.setFilter("ALL") }
                 )
                 NavButton(
                     icon = Icons.Default.Search,
@@ -201,6 +225,47 @@ fun HomeScreen(
         }
     }
 }
+
+@Composable
+fun CategoryFilterRow(
+    selectedFilter: String?,
+    onFilterSelected: (String?) -> Unit
+) {
+    val categories = listOf(
+        CategoryItem("All", "ALL", Icons.Default.Image),
+        CategoryItem("People", "PEOPLE", Icons.Default.Face),
+        CategoryItem("Pets", "PETS", Icons.Default.Pets),
+        CategoryItem("Nature", "NATURE", Icons.Default.Landscape),
+        CategoryItem("Documents", "DOCUMENTS", Icons.Default.Description)
+    )
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(categories) { category ->
+            val isSelected = (selectedFilter ?: "ALL") == category.id
+            Surface(
+                onClick = { onFilterSelected(category.id) },
+                shape = RoundedCornerShape(16.dp),
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.height(36.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(category.icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = category.name, fontSize = 14.sp)
+                }
+            }
+        }
+    }
+}
+
+data class CategoryItem(val name: String, val id: String, val icon: ImageVector)
 
 @Composable
 fun NavButton(

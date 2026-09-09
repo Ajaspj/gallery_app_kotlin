@@ -107,7 +107,8 @@ class MainActivity : ComponentActivity() {
                                 viewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
                                 onMediaClick = { list, index ->
                                     selectedMedia = list to index
-                                }
+                                },
+                                onBackClick = { currentScreen = Screen.Home }
                             )
                         }
                     }
